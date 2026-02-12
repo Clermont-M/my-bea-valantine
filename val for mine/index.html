@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>For Bea ❤️</title>
+
+<style>
+body{
+margin:0;
+font-family:Segoe UI;
+background:pink;
+text-align:center;
+overflow:hidden;
+}
+
+.screen{
+position:absolute;
+width:100%;
+height:100%;
+display:flex;
+flex-direction:column;
+justify-content:center;
+align-items:center;
+}
+
+.hidden{display:none;}
+
+button{
+padding:15px 25px;
+border:none;
+border-radius:25px;
+margin:10px;
+font-size:18px;
+cursor:pointer;
+}
+
+#yesBtn{background:#ff4d6d;color:white;}
+#noBtn{background:#888;color:white;position:absolute;}
+
+input{
+padding:10px;
+border-radius:10px;
+border:1px solid #ccc;
+margin:10px;
+width:250px;
+}
+
+textarea{
+padding:10px;
+border-radius:10px;
+border:1px solid #ccc;
+margin:10px;
+width:400px;
+height:300px;
+font-family: monospace;
+}
+
+.admin-btn{
+position: fixed;
+top: 10px;
+right: 10px;
+padding: 8px 15px;
+background: #333;
+color: white;
+border: none;
+border-radius: 5px;
+cursor: pointer;
+font-size: 14px;
+z-index: 1000;
+}
+
+.responses-list{
+max-height: 400px;
+overflow-y: auto;
+width: 90%;
+margin: 20px auto;
+}
+
+.response-item{
+background: white;
+padding: 15px;
+margin: 10px 0;
+border-radius: 10px;
+text-align: left;
+box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.response-item h4{
+margin: 5px 0;
+color: #ff4d6d;
+}
+
+.response-item p{
+margin: 5px 0;
+}
+
+/* hearts */
+.heart{
+position:absolute;
+animation:float 6s linear infinite;
+}
+@keyframes float{
+from{transform:translateY(100vh);}
+to{transform:translateY(-10vh);opacity:0;}
+}
+
+/* Responsive / Mobile tweaks */
+@media (max-width: 600px) {
+	body{font-size:18px;}
+	.screen{padding:18px;box-sizing:border-box;}
+	button{padding:16px 20px;font-size:18px;border-radius:20px;}
+	input, textarea{width:90%;font-size:18px;padding:12px;}
+	audio{display:block;width:90%;margin:10px auto;}
+	.admin-btn{top:auto;bottom:12px;right:12px;padding:10px 12px;font-size:16px;}
+	.responses-list{width:95%;max-height:50vh;padding:10px;}
+	#noBtn{position:fixed;}
+	.heart{font-size:22px;}
+	#yesBtn,#noBtn{min-width:120px;padding:12px 18px;}
+}
+
+/* Improve touch responsiveness */
+button{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+
+</style>
+</head>
+
+<body>
+
+<!-- INTRO -->
+<div class="screen" id="intro">
+<h1>Hi Bea ❤️</h1>
+<h2>Dorian built something special for you</h2>
+<button onclick="start()">Start</button>
+</div>
+
+<!-- AI QUESTIONS -->
+<div class="screen hidden" id="ai">
+<h2 id="question"></h2>
+<input id="answer" placeholder="type your answer..." autocomplete="off">
+<button id="nextBtn" onclick="next()" disabled>Next</button>
+</div>
+
+<!-- SONG SNIPPETS -->
+<div class="screen hidden" id="music">
+<h2>Your Favorite Moments 🎶</h2>
+
+<audio controls src="songs/Faouzia & John Legend - Minefields (Official Music Video) - Faouzia.mp3"></audio>
+<audio controls src="songs/Lady Gaga, Bruno Mars - Die With A Smile (Official Music Video) - LadyGagaVEVO.mp3"></audio>
+<audio controls src="songs/Meghan Trainor - Like I'm Gonna Lose You (Official Video) ft. John Legend - MeghanTrainorVEVO.mp3"></audio>
+<audio controls src="songs/Mohombi - Coconut Tree ft. Nicole Scherzinger - MohombiVEVO.mp3"></audio>
+
+<button onclick="showProposal()">Continue ❤️</button>
+</div>
+
+<!-- PROPOSAL -->
+<div class="screen hidden" id="proposal">
+<h1>Bea ❤️ Will you be my Valentine?</h1>
+<button id="yesBtn">Yes 😍</button>
+<button id="noBtn">No 😅</button>
+</div>
+
+<!-- FINAL -->
+<div class="screen hidden" id="final">
+<h1>She said YES ❤️😭</h1>
+<h2>Dorian + Dorian = Forever 💖</h2>
+<h2>And happy plus 5.1 years together</h2>
+</div>
+
+<!-- ADMIN - VIEW RESPONSES -->
+<div class="screen hidden" id="admin">
+<h2>💾 Stored Responses</h2>
+<button onclick="goBack()" style="margin-bottom: 20px;">← Back</button>
+<div class="responses-list" id="responsesList"></div>
+<button onclick="downloadResponses()">📥 Download as JSON</button>
+<button onclick="clearAllResponses()" style="background: #ff6b6b;">🗑️ Clear All</button>
+<button onclick="goBack()">Close</button>
+</div>
+
+<button class="admin-btn" onclick="showAdmin()">📊 View Responses</button>
+
+<script>
+
+let questions=[
+"1: What was your first impression of Me?",
+"2: Your favorite memory together?",
+"3: When did you feel most loved?",
+"4: What makes your relationship special?",
+"5: What do you dream for the future together?"
+];
+
+let answers=[];
+let index=0;
+
+function start(){
+intro.classList.add("hidden");
+ai.classList.remove("hidden");
+showQ();
+}
+
+
+function showQ(){
+	question.innerText = questions[index];
+	answer.focus();
+	// reset input and Next button state
+	answer.value = '';
+	answer.style.borderColor = '';
+	nextBtn.disabled = true;
+}
+
+// enable/disable Next based on trimmed input and allow Enter to submit
+answer.addEventListener('input', function(){
+	if(this.value.trim().length > 0){
+		nextBtn.disabled = false;
+		this.style.borderColor = '';
+	} else {
+		nextBtn.disabled = true;
+	}
+});
+
+answer.addEventListener('keyup', function(e){
+	if(e.key === 'Enter' && !nextBtn.disabled){
+		next();
+	}
+});
+
+function next(){
+	const val = answer.value.trim();
+	if(!val){
+		answer.style.borderColor = 'red';
+		answer.focus();
+		return;
+	}
+
+	answers.push(val);
+	index++;
+
+	if(index < questions.length){
+		showQ();
+	} else {
+		saveToDatabase();
+		ai.classList.add('hidden');
+		music.classList.remove('hidden');
+	}
+}
+
+// save answers to local database
+function saveToDatabase(){
+const timestamp = new Date().toLocaleString();
+const response = {
+timestamp: timestamp,
+answers: answers
+};
+
+let allResponses = JSON.parse(localStorage.getItem('valentineResponses') || '[]');
+allResponses.push(response);
+localStorage.setItem('valentineResponses', JSON.stringify(allResponses));
+console.log('✅ Answers saved! Total responses:', allResponses.length);
+}
+
+// View admin panel
+function showAdmin(){
+loadResponses();
+const current = document.querySelector('.screen:not(.hidden)');
+if(current) current.classList.add("hidden");
+admin.classList.remove("hidden");
+}
+
+// Load and display responses
+function loadResponses(){
+let allResponses = JSON.parse(localStorage.getItem('valentineResponses') || '[]');
+let html = '';
+
+if(allResponses.length === 0){
+html = '<p style="text-align: center; padding: 20px;">No responses yet 😢</p>';
+} else {
+allResponses.forEach((response, index) => {
+html += `<div class="response-item">
+<h4>Response #${index + 1} - ${response.timestamp}</h4>`;
+response.answers.forEach((ans, qIndex) => {
+html += `<p><strong>Q${qIndex + 1}:</strong> ${ans}</p>`;
+});
+html += `</div>`;
+});
+}
+
+document.getElementById('responsesList').innerHTML = html;
+}
+
+// Download responses as JSON
+function downloadResponses(){
+let allResponses = JSON.parse(localStorage.getItem('valentineResponses') || '[]');
+if(allResponses.length === 0){
+alert('No responses to download yet!');
+return;
+}
+const dataStr = JSON.stringify(allResponses, null, 2);
+const dataBlob = new Blob([dataStr], {type: 'application/json'});
+const url = URL.createObjectURL(dataBlob);
+const link = document.createElement('a');
+link.href = url;
+link.download = 'valentine_responses.json';
+link.click();
+URL.revokeObjectURL(url);
+}
+
+// Clear all responses
+function clearAllResponses(){
+if(confirm('Are you sure you want to delete all responses?')){
+localStorage.removeItem('valentineResponses');
+loadResponses();
+console.log('✅ All responses cleared!');
+}
+}
+
+// Go back to previous screen
+function goBack(){
+admin.classList.add("hidden");
+intro.classList.remove("hidden");
+}
+
+// proposal logic
+let size=18;
+
+yesBtn.onmouseover = () => {
+	size += 5;
+	yesBtn.style.fontSize = size + "px";
+};
+// also handle touch on mobile
+yesBtn.addEventListener('touchstart', (e) => {
+	size += 6;
+	yesBtn.style.fontSize = size + "px";
+	e.preventDefault();
+});
+
+const moveNoBtn = () => {
+	// keep inside viewport on mobile
+	const left = Math.random() * 75 + 5; // 5-80 vw
+	const top = Math.random() * 75 + 5;
+	noBtn.style.left = left + "vw";
+	noBtn.style.top = top + "vh";
+};
+
+noBtn.onmouseover = moveNoBtn;
+noBtn.addEventListener('touchstart', (e) => { moveNoBtn(); e.preventDefault(); });
+
+yesBtn.onclick = () => {
+	proposal.classList.add('hidden');
+	final.classList.remove('hidden');
+	confetti();
+};
+
+function showProposal(){
+music.classList.add("hidden");
+proposal.classList.remove("hidden");
+}
+
+// hearts
+setInterval(()=>{
+let h=document.createElement("div");
+h.className="heart";
+h.innerHTML="❤️";
+h.style.left=Math.random()*100+"vw";
+document.body.appendChild(h);
+setTimeout(()=>h.remove(),6000);
+},400);
+
+// confetti
+function confetti(){
+for(let i=0;i<60;i++){
+let c=document.createElement("div");
+c.innerHTML="🎉";
+c.className="heart";
+c.style.left=Math.random()*100+"vw";
+document.body.appendChild(c);
+setTimeout(()=>c.remove(),3000);
+}
+}
+</script>
+
+</body>
+</html>
